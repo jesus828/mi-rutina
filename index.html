@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Rutina</title>
+  <meta name="theme-color" content="#080810" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mi Rutina" />
+  <link rel="manifest" href="manifest.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #080810;
+      --surface: #0f0f1a;
+      --card:    #141420;
+      --border:  #1e1e30;
+      --border2: #2a2a40;
+      --accent:  #e8ff5a;
+      --blue:    #5ae8ff;
+      --pink:    #ff5ae8;
+      --gym:     #ff9f5a;
+      --text:    #eeeef5;
+      --muted:   #55556a;
+      --muted2:  #888899;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;}
+    body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.4;}
+
+    /* TAB BAR */
+    .tab-bar{position:sticky;top:0;z-index:100;background:rgba(8,8,16,0.93);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;padding:0 16px;}
+    .tab{flex:1;padding:14px 8px 12px;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;transition:color .2s;}
+    .tab .ti{font-size:15px;}
+    .tab.active{color:var(--accent);}
+    .tab.active::after{content:'';position:absolute;bottom:0;left:25%;right:25%;height:2px;background:var(--accent);border-radius:2px 2px 0 0;}
+    .pending-badge{position:absolute;top:8px;right:calc(50% - 20px);background:var(--pink);color:#080810;font-size:8px;font-weight:700;width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+    /* PAGES */
+    .page{display:none;}.page.active{display:block;}
+
+    /* HEADER */
+    .hdr{padding:28px 20px 16px;}
+    .hdr-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px;}
+    .big-day{font-family:'Bebas Neue',sans-serif;font-size:54px;line-height:.9;letter-spacing:.02em;}
+    .live-clk{font-size:10px;color:var(--accent);letter-spacing:.08em;margin-top:6px;}
+    .day-meta{font-size:9px;color:var(--muted2);letter-spacing:.15em;text-transform:uppercase;margin-top:8px;}
+    .badges{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--border2);color:var(--muted2);}
+    .badge.gym{border-color:var(--gym);color:var(--gym);}
+    .badge.work{border-color:var(--blue);color:var(--blue);}
+    .badge.wkd{border-color:var(--pink);color:var(--pink);}
+    .bdot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* DAY SELECTOR */
+    .day-sel{display:flex;gap:6px;padding:0 20px 18px;overflow-x:auto;scrollbar-width:none;}
+    .day-sel::-webkit-scrollbar{display:none;}
+    .dbtn{flex-shrink:0;width:46px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:7px 4px;cursor:pointer;text-align:center;transition:all .18s;}
+    .dbtn.gym-day{border-color:rgba(255,159,90,.3);}
+    .dbtn.active{background:var(--accent);border-color:var(--accent);}
+    .dbtn.active.gym-day{background:var(--gym);border-color:var(--gym);}
+    .dbtn.active.wkd{background:var(--surface);border-color:var(--pink);}
+    .dbtn .dl{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--text);display:block;line-height:1;}
+    .dbtn.active .dl{color:#080810;}
+    .dbtn.active.wkd .dl{color:var(--pink);}
+    .dbtn .dn{font-size:8px;color:var(--muted);display:block;margin-top:2px;}
+    .dbtn.active .dn{color:rgba(8,8,16,.55);}
+    .dbtn.active.wkd .dn{color:var(--pink);}
+    .gpip{width:4px;height:4px;border-radius:50%;background:var(--gym);margin:3px auto 0;}
+    .dbtn.active.gym-day .gpip{background:#080810;}
+
+    /* NEXT BANNER */
+    .nb{margin:0 20px 16px;background:linear-gradient(135deg,rgba(232,255,90,.07),rgba(232,255,90,.02));border:1px solid rgba(232,255,90,.22);border-radius:16px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;}
+    .nb-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.2em;color:var(--accent);margin-bottom:3px;}
+    .nb-time{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);line-height:1;letter-spacing:.03em;}
+    .nb-name{font-size:11px;color:var(--text);margin-top:2px;}
+    .nb-cnt{text-align:right;}
+    .nb-num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);}
+    .nb-sub{font-size:8px;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;}
+
+    /* SECTION */
+    .sec{padding:0 20px 4px;}
+    .sec-lbl{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+    .sec-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* ALARM CARD */
+    .ac{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:12px;transition:opacity .2s,border-color .2s;position:relative;overflow:hidden;}
+    .ac.disabled{opacity:.35;}
+    .ac.is-next{border-color:rgba(232,255,90,.3);background:rgba(232,255,90,.04);}
+    .abar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+    .ac.t-morning .abar,.ac.is-next .abar{background:var(--accent);}
+    .ac.t-gym .abar{background:var(--gym);}
+    .ac.t-work .abar{background:var(--blue);}
+    .ac.t-night .abar{background:var(--muted);}
+    .atime{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.03em;min-width:66px;line-height:1;}
+    .ac.t-morning .atime,.ac.is-next .atime{color:var(--accent);}
+    .ac.t-gym .atime{color:var(--gym);}
+    .ac.t-work .atime{color:var(--blue);}
+    .ac.t-night .atime{color:var(--muted2);}
+    .ainfo{flex:1;}
+    .albl{font-size:12px;color:var(--text);line-height:1.3;}
+    .asub{font-size:9px;color:var(--muted2);margin-top:2px;}
+    .next-pill{display:inline-block;font-size:7px;background:var(--accent);color:#080810;padding:2px 7px;border-radius:100px;margin-top:4px;letter-spacing:.1em;text-transform:uppercase;}
+
+    /* TOGGLE */
+    .tgl{width:38px;height:22px;background:var(--border2);border-radius:100px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+    .tgl::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--muted);top:3px;left:3px;transition:all .2s;}
+    .tgl.on{background:rgba(232,255,90,.15);}
+    .tgl.on::after{left:19px;background:var(--accent);}
+    .ac.t-gym .tgl.on{background:rgba(255,159,90,.15);}
+    .ac.t-gym .tgl.on::after{background:var(--gym);}
+    .ac.t-work .tgl.on{background:rgba(90,232,255,.15);}
+    .ac.t-work .tgl.on::after{background:var(--blue);}
+
+    /* WEEKEND */
+    .wkd-card{margin:16px 20px;background:linear-gradient(135deg,rgba(255,90,232,.07),rgba(255,90,232,.02));border:1px solid rgba(255,90,232,.2);border-radius:18px;padding:28px 24px;text-align:center;}
+    .wkd-emoji{font-size:44px;margin-bottom:10px;}
+    .wkd-title{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--pink);}
+    .wkd-sub{font-size:10px;color:var(--muted2);margin-top:6px;line-height:1.7;}
+
+    /* PENDING PAGE */
+    .ph{padding:28px 20px 14px;}
+    .ptitle{font-family:'Bebas Neue',sans-serif;font-size:46px;line-height:.9;color:var(--text);}
+    .ptitle span{color:var(--pink);}
+    .pdate{font-size:9px;color:var(--muted2);letter-spacing:.15em;text-transform:uppercase;margin-top:7px;}
+
+    /* Add form */
+    .add-box{margin:0 20px 18px;background:var(--card);border:1px solid var(--border2);border-radius:15px;padding:14px;}
+    .add-row{display:flex;gap:7px;margin-bottom:9px;}
+    .ainput{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:9px 13px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .2s;}
+    .ainput:focus{border-color:var(--pink);}
+    .ainput::placeholder{color:var(--muted);}
+    .atime-inp{width:88px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:9px 8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .2s;text-align:center;}
+    .atime-inp:focus{border-color:var(--pink);}
+    .chips{display:flex;gap:5px;margin-bottom:9px;flex-wrap:wrap;}
+    .chip{padding:5px 11px;border-radius:100px;border:1px solid var(--border2);font-size:9px;color:var(--muted2);cursor:pointer;background:none;font-family:'DM Mono',monospace;transition:all .15s;letter-spacing:.05em;}
+    .chip.sel{border-color:var(--pink);color:var(--pink);background:rgba(255,90,232,.08);}
+    .add-btn{width:100%;background:var(--pink);color:#080810;border:none;border-radius:9px;padding:11px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:opacity .2s;}
+    .add-btn:active{opacity:.8;}
+
+    /* Pending day tabs */
+    .pd-tabs{display:flex;gap:5px;padding:0 20px 14px;overflow-x:auto;scrollbar-width:none;}
+    .pd-tabs::-webkit-scrollbar{display:none;}
+    .pd-tab{flex-shrink:0;padding:5px 13px;border-radius:100px;border:1px solid var(--border2);background:none;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted2);cursor:pointer;transition:all .15s;position:relative;}
+    .pd-tab.active{border-color:var(--pink);color:var(--pink);background:rgba(255,90,232,.08);}
+    .pd-cnt{position:absolute;top:-4px;right:-4px;background:var(--pink);color:#080810;font-size:7px;font-weight:700;width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+    /* Pending items */
+    .plist{padding:0 20px;}
+    .pi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:11px;transition:all .2s;position:relative;overflow:hidden;}
+    .pi.done{opacity:.38;background:rgba(20,20,32,.6);}
+    .pibar{position:absolute;left:0;top:0;bottom:0;width:3px;}
+    .pibar.reunion{background:var(--pink);}
+    .pibar.tarea{background:var(--blue);}
+    .pibar.personal{background:var(--accent);}
+    .pibar.otro{background:var(--muted2);}
+    .picheck{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;transition:all .18s;}
+    .pi.done .picheck{background:var(--muted);border-color:var(--muted);color:#080810;}
+    .piinfo{flex:1;}
+    .pitext{font-size:12px;color:var(--text);line-height:1.3;}
+    .pi.done .pitext{text-decoration:line-through;color:var(--muted);}
+    .pimeta{font-size:9px;color:var(--muted2);margin-top:3px;display:flex;gap:7px;align-items:center;}
+    .pitag{padding:1px 7px;border-radius:100px;font-size:7px;letter-spacing:.1em;text-transform:uppercase;}
+    .pitag.reunion{background:rgba(255,90,232,.15);color:var(--pink);}
+    .pitag.tarea{background:rgba(90,232,255,.15);color:var(--blue);}
+    .pitag.personal{background:rgba(232,255,90,.15);color:var(--accent);}
+    .pitag.otro{background:rgba(136,136,153,.15);color:var(--muted2);}
+    .pidel{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:3px;flex-shrink:0;opacity:.5;transition:opacity .15s;}
+    .pidel:active{opacity:1;}
+    .empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:11px;line-height:1.8;}
+    .empty .ee{font-size:34px;margin-bottom:10px;display:block;}
+
+    /* RINGING */
+    .ro{display:none;position:fixed;inset:0;background:rgba(8,8,16,.97);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:18px;}
+    .ro.show{display:flex;animation:fi .3s ease;}
+    @keyframes fi{from{opacity:0}to{opacity:1}}
+    .rc{width:115px;height:115px;border-radius:50%;background:rgba(232,255,90,.07);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:42px;animation:rp .65s ease-in-out infinite alternate;}
+    @keyframes rp{from{transform:scale(1);box-shadow:0 0 0 0 rgba(232,255,90,.5)}to{transform:scale(1.1);box-shadow:0 0 0 26px rgba(232,255,90,0)}}
+    .rtime{font-family:'Bebas Neue',sans-serif;font-size:60px;color:var(--accent);letter-spacing:.05em;}
+    .rname{font-size:17px;text-align:center;padding:0 30px;color:var(--text);}
+    .rsub{font-size:10px;color:var(--muted2);text-align:center;}
+    .rdis{background:var(--accent);color:#080810;border:none;border-radius:100px;padding:13px 48px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;}
+    .rsnz{background:transparent;border:1px solid var(--border2);color:var(--muted2);border-radius:100px;padding:9px 28px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;}
+
+    /* Install */
+    .ib{margin:0 20px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:13px;padding:11px 14px;display:flex;align-items:center;gap:9px;}
+    .ibt{flex:1;font-size:10px;color:var(--muted2);line-height:1.4;}
+    .ibtn{background:var(--accent);color:#080810;border:none;border-radius:7px;padding:6px 11px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;white-space:nowrap;}
+    .cx{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px;}
+    .pb{padding-bottom:48px;}
+  </style>
+</head>
+<body>
+
+<!-- Ringing overlay -->
+<div class="ro" id="ro">
+  <div class="rc" id="re">⏰</div>
+  <div class="rtime" id="rt">06:30</div>
+  <div class="rname" id="rn">¡Hora de despertar!</div>
+  <div class="rsub"  id="rs">Toca para apagar</div>
+  <button class="rdis" onclick="dismissAlarm()">APAGAR</button>
+  <button class="rsnz" onclick="snoozeAlarm()">Posponer 5 min</button>
+</div>
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab active" id="tabA" onclick="switchTab('alarms')">
+    <span class="ti">⏰</span>ALARMAS
+  </button>
+  <button class="tab" id="tabP" onclick="switchTab('pending')">
+    <span class="ti">📋</span>PENDIENTES
+    <span class="pending-badge" id="pb" style="display:none">0</span>
+  </button>
+</div>
+
+<!-- ═══ PAGE ALARMAS ═══ -->
+<div class="page active" id="pgA">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div>
+        <div class="big-day" id="bigDay">LUNES</div>
+        <div class="day-meta" id="dayMeta"></div>
+      </div>
+      <div class="live-clk" id="clk">--:--:--</div>
+    </div>
+    <div class="badges" id="bdgs"></div>
+  </div>
+
+  <div class="day-sel" id="dsel"></div>
+
+  <div class="ib" id="ib" style="display:none">
+    <span style="font-size:17px">📲</span>
+    <span class="ibt">Instala en Android para notificaciones en segundo plano</span>
+    <button class="ibtn" id="ibtn">Instalar</button>
+    <button class="cx" onclick="document.getElementById('ib').style.display='none'">✕</button>
+  </div>
+
+  <div class="nb" id="nbanner">
+    <div>
+      <div class="nb-lbl">Próxima alarma</div>
+      <div class="nb-time" id="nbt">--:--</div>
+      <div class="nb-name" id="nbn">—</div>
+    </div>
+    <div class="nb-cnt">
+      <div class="nb-num" id="nbn2">--</div>
+      <div class="nb-sub">restantes</div>
+    </div>
+  </div>
+
+  <div id="alarmsCont"></div>
+  <div class="pb"></div>
+</div>
+
+<!-- ═══ PAGE PENDIENTES ═══ -->
+<div class="page" id="pgP">
+  <div class="ph">
+    <div class="ptitle">PENDI<span>ENTES</span></div>
+    <div class="pdate" id="pdate"></div>
+  </div>
+
+  <div class="pd-tabs" id="pdTabs"></div>
+
+  <div class="add-box">
+    <div class="add-row">
+      <input class="ainput" id="ptxt" placeholder="Ej: Reunión con equipo..." maxlength="80"/>
+      <input class="atime-inp" id="ptime" type="time"/>
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip sel" data-t="reunion">📅 Reunión</button>
+      <button class="chip" data-t="tarea">✅ Tarea</button>
+      <button class="chip" data-t="personal">⭐ Personal</button>
+      <button class="chip" data-t="otro">📌 Otro</button>
+    </div>
+    <button class="add-btn" onclick="addPending()">+ Agregar pendiente</button>
+  </div>
+
+  <div class="plist" id="plist"></div>
+  <div class="pb"></div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────
+const DS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DL=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+const AL_NORMAL=[
+  {id:'n1',time:'06:30',label:'¡Buenos días!',sub:'Despertador — abre las persianas',emoji:'🌅',type:'morning'},
+  {id:'n2',time:'06:35',label:'Vaso de agua',sub:'Hidratación al despertar',emoji:'💧',type:'morning'},
+  {id:'n3',time:'06:40',label:'Estiramiento',sub:'15 min de movimiento ligero',emoji:'🧘',type:'morning'},
+  {id:'n4',time:'07:00',label:'Ducha',sub:'Termina con 30s de agua fría',emoji:'🚿',type:'morning'},
+  {id:'n5',time:'07:20',label:'Desayuno',sub:'Sin celular — come tranquilo',emoji:'🍳',type:'morning'},
+  {id:'n6',time:'07:50',label:'Planifica el día',sub:'3 prioridades de trabajo',emoji:'📋',type:'morning'},
+  {id:'n7',time:'08:50',label:'Inicio trabajo',sub:'Laptop encendida, foco total',emoji:'💻',type:'work'},
+  {id:'n8',time:'13:00',label:'Almuerzo',sub:'Aléjate de la pantalla 30 min',emoji:'🍽️',type:'work'},
+  {id:'n9',time:'19:00',label:'Fin del trabajo',sub:'Cierra la laptop — desconéctate',emoji:'🔒',type:'work'},
+  {id:'n10',time:'19:30',label:'Cena',sub:'Antes que se vaya el agua',emoji:'🥗',type:'night'},
+  {id:'n11',time:'19:50',label:'Ducha nocturna',sub:'¡Último momento con agua!',emoji:'🚿',type:'night'},
+  {id:'n12',time:'21:45',label:'Apaga pantallas',sub:'Lectura o música tranquila',emoji:'📵',type:'night'},
+  {id:'n13',time:'22:15',label:'A la cama',sub:'7.5h de sueño — buenas noches',emoji:'🌙',type:'night'},
+];
+
+const AL_GYM=[
+  {id:'g1',time:'05:50',label:'¡Día de gym!',sub:'Come algo ligero antes de salir',emoji:'💪',type:'gym'},
+  {id:'g2',time:'05:55',label:'Snack pre-gym',sub:'Banana o tostada rápida',emoji:'🍌',type:'gym'},
+  {id:'g3',time:'06:00',label:'Sal al gym',sub:'15 min caminando — ¡vamos!',emoji:'🏋️',type:'gym'},
+  {id:'g4',time:'07:15',label:'Regresa del gym',sub:'15 min caminando de vuelta',emoji:'🚶',type:'gym'},
+  {id:'g5',time:'07:30',label:'Ducha post-gym',sub:'Aprovecha bien el agua',emoji:'🚿',type:'gym'},
+  {id:'g6',time:'08:00',label:'Desayuno fuerte',sub:'Proteína: huevos, avena, yogur',emoji:'🥚',type:'gym'},
+  {id:'g7',time:'08:50',label:'Inicio trabajo',sub:'Laptop encendida, foco total',emoji:'💻',type:'work'},
+  {id:'g8',time:'13:00',label:'Almuerzo',sub:'Aléjate de la pantalla 30 min',emoji:'🍽️',type:'work'},
+  {id:'g9',time:'19:00',label:'Fin del trabajo',sub:'Cierra la laptop — desconéctate',emoji:'🔒',type:'work'},
+  {id:'g10',time:'19:30',label:'Cena',sub:'Antes que se vaya el agua',emoji:'🥗',type:'night'},
+  {id:'g11',time:'19:50',label:'Ducha nocturna',sub:'¡Último momento con agua!',emoji:'🚿',type:'night'},
+  {id:'g12',time:'21:45',label:'Apaga pantallas',sub:'Gym mañana — duerme temprano',emoji:'📵',type:'night'},
+  {id:'g13',time:'22:00',label:'A la cama',sub:'Gym mañana — duerme bien',emoji:'🌙',type:'night'},
+];
+
+const AL_WKD=[
+  {id:'w1',time:'07:30',label:'Buenos días',sub:'Máx 1h después que entre semana',emoji:'☀️',type:'morning'},
+  {id:'w2',time:'07:35',label:'Agua al despertar',sub:'Hidratación matutina',emoji:'💧',type:'morning'},
+  {id:'w3',time:'08:00',label:'Desayuno tranquilo',sub:'Sin prisa — disfruta el día',emoji:'🥞',type:'morning'},
+  {id:'w4',time:'19:30',label:'Cena temprana',sub:'Antes que se vaya el agua',emoji:'🥗',type:'night'},
+  {id:'w5',time:'19:50',label:'Ducha nocturna',sub:'¡Último momento con agua!',emoji:'🚿',type:'night'},
+  {id:'w6',time:'22:00',label:'Apaga pantallas',sub:'Mañana es lunes — no te desveles',emoji:'📵',type:'night'},
+  {id:'w7',time:'22:30',label:'A la cama',sub:'Mantén el ritmo para el lunes',emoji:'🌙',type:'night'},
+];
+
+// ── STATE ─────────────────────────────────────────────────
+let selADay=new Date().getDay(), selPDay=new Date().getDay();
+let selType='reunion';
+let aStates=JSON.parse(localStorage.getItem('as3')||'{}');
+let pItems=JSON.parse(localStorage.getItem('pi3')||'{}');
+let dP=null, audioCtx=null, ringIv=null;
+let lastTrig={};
+
+// ── UTILS ─────────────────────────────────────────────────
+const isGym=d=>[2,4].includes(d);
+const isWork=d=>[1,2,3,4,5].includes(d);
+const isWkd=d=>[0,6].includes(d);
+function getAl(d){return isWkd(d)?AL_WKD:isGym(d)?AL_GYM:AL_NORMAL;}
+function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function getEn(id){return aStates[id]!==undefined?aStates[id]:true;}
+function saveAS(){localStorage.setItem('as3',JSON.stringify(aStates));}
+function savePIs(){localStorage.setItem('pi3',JSON.stringify(pItems));}
+function pKey(d){return`d${d}`;}
+function getPI(d){return pItems[pKey(d)]||[];}
+function setPI(d,items){pItems[pKey(d)]=items;savePIs();}
+const TLAB={reunion:'Reunión',tarea:'Tarea',personal:'Personal',otro:'Otro'};
+
+// ── TABS ─────────────────────────────────────────────────
+function switchTab(t){
+  ['A','P'].forEach(x=>document.getElementById('pg'+x).classList.toggle('active',x===(t==='alarms'?'A':'P')));
+  ['A','P'].forEach(x=>document.getElementById('tab'+x).classList.toggle('active',x===(t==='alarms'?'A':'P')));
+  if(t==='pending')renderPPage();
+}
+
+// ── AUDIO ─────────────────────────────────────────────────
+function playAl(){
+  function tone(){
+    try{
+      audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+      const notes=[523,659,784,1047,784],t=audioCtx.currentTime;
+      notes.forEach((f,i)=>{
+        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.connect(g);g.connect(audioCtx.destination);
+        o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(0,t+i*.12);
+        g.gain.linearRampToValueAtTime(.28,t+i*.12+.04);
+        g.gain.linearRampToValueAtTime(0,t+i*.12+.22);
+        o.start(t+i*.12);o.stop(t+i*.12+.25);
+      });
+    }catch(e){}
+  }
+  tone();ringIv=setInterval(tone,2000);
+}
+function stopAl(){clearInterval(ringIv);if(audioCtx){audioCtx.close();audioCtx=null;}}
+
+// ── ALARM TRIGGER ─────────────────────────────────────────
+function trigAlarm(a){
+  document.getElementById('re').textContent=a.emoji||'⏰';
+  document.getElementById('rt').textContent=a.time||'';
+  document.getElementById('rn').textContent=a.label;
+  document.getElementById('rs').textContent=a.sub;
+  document.getElementById('ro').classList.add('show');
+  playAl();
+  if(navigator.vibrate)navigator.vibrate([400,150,400,150,800]);
+  if(Notification.permission==='granted')new Notification('⏰ '+a.label,{body:a.sub,tag:a.id||'x'});
+}
+function dismissAlarm(){stopAl();document.getElementById('ro').classList.remove('show');if(navigator.vibrate)navigator.vibrate(0);}
+function snoozeAlarm(){stopAl();document.getElementById('ro').classList.remove('show');if(navigator.vibrate)navigator.vibrate(0);setTimeout(()=>trigAlarm({label:'(Pospuesta)',sub:'Alarma pospuesta +5 min',emoji:'⏰',id:'snz'}),5*60*1000);}
+
+// ── ALARM CHECKER ─────────────────────────────────────────
+function checkAlarms(){
+  const n=new Date(),d=n.getDay(),cur=n.getHours()*60+n.getMinutes(),sec=n.getSeconds();
+  getAl(d).forEach(a=>{
+    if(!getEn(a.id))return;
+    const k=`${d}-${a.id}`;
+    if(toMin(a.time)===cur&&sec===0&&!lastTrig[k]){lastTrig[k]=true;trigAlarm(a);}
+  });
+}
+
+// ── NEXT ALARM ─────────────────────────────────────────
+function updNext(){
+  const n=new Date(),d=n.getDay();
+  if(selADay!==d){document.getElementById('nbanner').style.display='none';return;}
+  document.getElementById('nbanner').style.display='';
+  const cur=n.getHours()*60+n.getMinutes();
+  const up=getAl(d).filter(a=>getEn(a.id)&&toMin(a.time)>cur).sort((a,b)=>toMin(a.time)-toMin(b.time));
+  if(!up.length){document.getElementById('nbt').textContent='—';document.getElementById('nbn').textContent='Sin más alarmas hoy';document.getElementById('nbn2').textContent='';return;}
+  const nx=up[0],diff=toMin(nx.time)-cur,h=Math.floor(diff/60),m=diff%60;
+  document.getElementById('nbt').textContent=nx.time;
+  document.getElementById('nbn').textContent=nx.emoji+' '+nx.label;
+  document.getElementById('nbn2').textContent=h>0?`${h}h ${m}m`:`${m}m`;
+}
+
+// ── RENDER ALARMS ─────────────────────────────────────────
+function renderAHdr(){
+  const d=selADay,gym=isGym(d),wkd=isWkd(d),today=new Date().getDay();
+  document.getElementById('bigDay').textContent=DL[d].toUpperCase();
+  const dateStr=new Date().toLocaleDateString('es-PE',{day:'numeric',month:'long'});
+  document.getElementById('dayMeta').textContent=d===today?'HOY · '+dateStr:DL[d];
+  const b=document.getElementById('bdgs');b.innerHTML='';
+  if(gym)b.innerHTML+=`<span class="badge gym"><span class="bdot"></span>GYM 6AM</span>`;
+  if(isWork(d))b.innerHTML+=`<span class="badge work"><span class="bdot"></span>TRABAJO LUN-VIE</span>`;
+  if(wkd)b.innerHTML+=`<span class="badge wkd"><span class="bdot"></span>FIN DE SEMANA</span>`;
+}
+
+function renderDSel(){
+  const s=document.getElementById('dsel');s.innerHTML='';
+  const today=new Date().getDay();
+  DS.forEach((x,i)=>{
+    const gym=isGym(i),wkd=isWkd(i);
+    const b=document.createElement('button');
+    b.className=`dbtn ${i===selADay?'active':''} ${gym?'gym-day':''} ${wkd?'wkd':''}`;
+    b.innerHTML=`<span class="dl">${x}</span><span class="dn">${i===today?'HOY':''}</span>${gym?'<div class="gpip"></div>':''}`;
+    b.addEventListener('click',()=>{selADay=i;renderAHdr();renderDSel();renderAList();updNext();});
+    s.appendChild(b);
+  });
+}
+
+function renderAList(){
+  const d=selADay,today=new Date().getDay(),cur=new Date().getHours()*60+new Date().getMinutes();
+  const alarms=getAl(d),cont=document.getElementById('alarmsCont');cont.innerHTML='';
+  if(isWkd(d)){
+    const wc=document.createElement('div');wc.className='wkd-card';
+    wc.innerHTML=`<div class="wkd-emoji">🎉</div><div class="wkd-title">FIN DE SEMANA</div><div class="wkd-sub">Sin trabajo hoy.<br>Descansa — pero mantén el horario de sueño.</div>`;
+    cont.appendChild(wc);
+  }
+  let nid=null;
+  if(d===today){const up=alarms.filter(a=>getEn(a.id)&&toMin(a.time)>cur).sort((a,b)=>toMin(a.time)-toMin(b.time));if(up.length)nid=up[0].id;}
+  const tl={morning:'MAÑANA',gym:'GYM',work:'TRABAJO',night:'NOCHE'};
+  const groups=[];let ct=null,cg=null;
+  alarms.forEach(a=>{if(a.type!==ct){ct=a.type;cg={type:a.type,items:[]};groups.push(cg);}cg.items.push(a);});
+  groups.forEach(g=>{
+    const sec=document.createElement('div');sec.className='sec';
+    sec.innerHTML=`<div class="sec-lbl">${tl[g.type]||g.type}</div>`;
+    g.items.forEach(a=>{
+      const en=getEn(a.id),isN=a.id===nid;
+      const c=document.createElement('div');
+      c.className=`ac t-${a.type} ${!en?'disabled':''} ${isN?'is-next':''}`;
+      c.innerHTML=`<div class="abar"></div><div class="atime">${a.time}</div><div class="ainfo"><div class="albl">${a.emoji} ${a.label}</div><div class="asub">${a.sub}</div>${isN?'<span class="next-pill">PRÓXIMA</span>':''}</div><button class="tgl ${en?'on':''}" data-id="${a.id}"></button>`;
+      c.querySelector('.tgl').addEventListener('click',e=>{const id=e.currentTarget.dataset.id;aStates[id]=!getEn(id);saveAS();renderAList();updNext();});
+      sec.appendChild(c);
+    });
+    cont.appendChild(sec);
+  });
+}
+
+// ── RENDER PENDING ─────────────────────────────────────────
+function renderPPage(){
+  renderPDTabs();renderPList();updPBadge();
+  document.getElementById('pdate').textContent='Semana actual · '+new Date().toLocaleDateString('es-PE',{month:'long',year:'numeric'});
+}
+
+function renderPDTabs(){
+  const t=document.getElementById('pdTabs');t.innerHTML='';
+  const today=new Date().getDay();
+  DS.forEach((s,i)=>{
+    const items=getPI(i),pend=items.filter(x=>!x.done).length;
+    const b=document.createElement('button');
+    b.className=`pd-tab ${i===selPDay?'active':''}`;
+    b.innerHTML=s+(i===today?' (HOY)':'')+(pend>0?`<span class="pd-cnt">${pend}</span>`:'');
+    b.addEventListener('click',()=>{selPDay=i;renderPDTabs();renderPList();});
+    t.appendChild(b);
+  });
+}
+
+function renderPList(){
+  const list=document.getElementById('plist'),items=getPI(selPDay);
+  if(!items.length){list.innerHTML=`<div class="empty"><span class="ee">✨</span>Sin pendientes para este día.<br>¡Agrega reuniones o tareas arriba!</div>`;return;}
+  const sorted=[...items].sort((a,b)=>{if(a.done!==b.done)return a.done?1:-1;if(a.time&&b.time)return a.time.localeCompare(b.time);if(a.time)return -1;if(b.time)return 1;return 0;});
+  list.innerHTML='';
+  sorted.forEach(item=>{
+    const div=document.createElement('div');div.className=`pi ${item.done?'done':''}`;
+    div.innerHTML=`<div class="pibar ${item.type}"></div><button class="picheck" data-id="${item.id}">${item.done?'✓':''}</button><div class="piinfo"><div class="pitext">${item.text}</div><div class="pimeta">${item.time?`<span>🕐 ${item.time}</span>`:''}<span class="pitag ${item.type}">${TLAB[item.type]||item.type}</span></div></div><button class="pidel" data-id="${item.id}">✕</button>`;
+    div.querySelector('.picheck').addEventListener('click',e=>{togglePI(selPDay,e.currentTarget.dataset.id);});
+    div.querySelector('.pidel').addEventListener('click',e=>{deletePI(selPDay,e.currentTarget.dataset.id);});
+    list.appendChild(div);
+  });
+}
+
+function addPending(){
+  const txt=document.getElementById('ptxt').value.trim();
+  if(!txt){document.getElementById('ptxt').focus();return;}
+  const time=document.getElementById('ptime').value;
+  const items=getPI(selPDay);
+  items.push({id:Date.now().toString(),text:txt,time,type:selType,done:false});
+  setPI(selPDay,items);
+  document.getElementById('ptxt').value='';
+  document.getElementById('ptime').value='';
+  renderPPage();
+}
+
+function togglePI(d,id){const items=getPI(d),it=items.find(x=>x.id===id);if(it)it.done=!it.done;setPI(d,items);renderPPage();}
+function deletePI(d,id){setPI(d,getPI(d).filter(x=>x.id!==id));renderPPage();}
+
+function updPBadge(){
+  const c=getPI(new Date().getDay()).filter(x=>!x.done).length;
+  const b=document.getElementById('pb');b.textContent=c;b.style.display=c>0?'flex':'none';
+}
+
+// Chips
+document.getElementById('chips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  b.classList.add('sel');selType=b.dataset.t;
+});
+document.getElementById('ptxt').addEventListener('keydown',e=>{if(e.key==='Enter')addPending();});
+
+// ── CLOCK ─────────────────────────────────────────────────
+function updClk(){const n=new Date(),p=x=>String(x).padStart(2,'0');document.getElementById('clk').textContent=`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;}
+
+// ── PWA ─────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dP=e;document.getElementById('ib').style.display='flex';});
+document.getElementById('ibtn').addEventListener('click',async()=>{if(dP){dP.prompt();await dP.userChoice;dP=null;document.getElementById('ib').style.display='none';}});
+
+// ── INIT ─────────────────────────────────────────────────
+async function init(){
+  if('Notification'in window&&Notification.permission==='default')await Notification.requestPermission();
+  renderAHdr();renderDSel();renderAList();updNext();updClk();updPBadge();
+  setInterval(updClk,1000);
+  setInterval(checkAlarms,1000);
+  setInterval(updNext,30000);
+  setInterval(updPBadge,60000);
+}
+init();
+</script>
+</body>
+</html>
